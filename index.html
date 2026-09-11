@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#285b87">
+
+  <!-- iPhone / iPad -->
+  <meta name="apple-mobile-web-app-title" content="CNEER 2026">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- PWA / navegadores compatibles -->
+  <meta name="application-name" content="CNEER 2026">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <title>CNEER 2026 · Check-in</title>
+
+  <script src="https://unpkg.com/html5-qrcode" defer></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --card: #ffffff;
+      --text: #202124;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --green-bg: #e8f5e9;
+      --green: #176b36;
+      --yellow-bg: #fff7db;
+      --yellow: #825f00;
+      --red-bg: #fdecec;
+      --red: #a12622;
+      --primary: #285b87;
+      --primary-dark: #1e4668;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 20px 14px 52px;
+    }
+
+    .header {
+      text-align: center;
+      margin: 2px 0 20px;
+    }
+
+    .logo {
+      display: block;
+      width: min(100%, 360px);
+      max-height: 150px;
+      object-fit: contain;
+      margin: 0 auto 8px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 7px rgba(0,0,0,.05);
+    }
+
+    h2, h3 { margin-top: 0; }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid #cfd4dc;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 16px;
+      background: white;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 13px 15px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button.primary { background: var(--primary); color: white; }
+    button.primary:hover { background: var(--primary-dark); }
+    button.secondary { background: #eef1f5; color: #263238; }
+    button.success { background: #1b7f46; color: white; }
+    button.warning { background: #9b6d00; color: white; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+
+    .big {
+      width: 100%;
+      margin-top: 10px;
+      padding: 15px;
+    }
+
+    .hidden { display: none !important; }
+
+    .status {
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+      font-weight: 700;
+    }
+
+    .status.GREEN { background: var(--green-bg); color: var(--green); }
+    .status.YELLOW { background: var(--yellow-bg); color: var(--yellow); }
+    .status.RED { background: var(--red-bg); color: var(--red); }
+    .status-title { font-size: 19px; margin-bottom: 4px; }
+    .missing { margin: 8px 0 0 18px; padding: 0; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .field {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 9px;
+    }
+
+    .field-name {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 3px;
+    }
+
+    .field-value {
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    .section-title {
+      margin: 20px 0 10px;
+      font-size: 17px;
+    }
+
+    .action { margin-top: 14px; }
+    .muted { color: var(--muted); font-size: 14px; }
+
+    .search-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .result {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .result:last-child { border-bottom: 0; }
+    .result-name { font-size: 17px; font-weight: 700; }
+
+    .pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      background: var(--green-bg);
+      color: var(--green);
+    }
+
+    .topline {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    #reader {
+      width: 100%;
+      margin-top: 12px;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    #loading {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,.78);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    #toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      background: #202124;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 10px;
+      max-width: calc(100% - 30px);
+      z-index: 60;
+      display: none;
+    }
+
+    @media (min-width: 520px) {
+      .grid.two { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="loading">Procesando…</div>
+  <div id="toast"></div>
+
+  <main class="app">
+    <div class="header">
+      <!-- Sube al repositorio la imagen ajustada con el nombre logo.png. -->
+      <img
+        id="appLogo"
+        class="logo"
+        src="logo.png"
+        alt="CNEER 2026"
+        onerror="this.classList.add('hidden'); document.getElementById('fallbackTitle').classList.remove('hidden');"
+      >
+      <h1 id="fallbackTitle" class="hidden">CNEER 2026</h1>
+      <p>Sistema de registro y check-in</p>
+    </div>
+
+    <section id="loginCard" class="card">
+      <h2>Acceso de staff</h2>
+      <p>Inicia sesión con una cuenta autorizada para utilizar el sistema de registro.</p>
+      <button class="primary big" onclick="loginGoogle()">Iniciar sesión con Google</button>
+      <p id="loginStatus" class="muted" style="margin-bottom:0"></p>
+    </section>
+
+    <section id="homeCard" class="card hidden">
+      <div class="topline">
+        <div>
+          <strong id="userInfo"></strong>
+          <div class="muted">Personal autorizado · Backend <span id="backendVersion">—</span></div>
+        </div>
+      </div>
+
+      <button class="primary big" onclick="startScanner()">📷 Escanear QR</button>
+      <button class="secondary big" onclick="showSearch()">🔎 Buscar asistente</button>
+
+      <div id="reader"></div>
+      <button id="cancelScanButton" class="secondary big hidden" onclick="cancelScanner()">
+        Cancelar escaneo
+      </button>
+    </section>
+
+    <section id="searchCard" class="card hidden">
+      <div class="topline">
+        <h2 style="margin:0">Buscar asistente</h2>
+        <button class="secondary" onclick="goHome()">← Volver</button>
+      </div>
+
+      <div class="search-row">
+        <input id="searchInput" placeholder="Nombre, correo o folio" autocomplete="off">
+        <button class="primary" onclick="search()">Buscar</button>
+      </div>
+
+      <div id="results"></div>
+    </section>
+
+    <section id="attendeeSection" class="hidden">
+      <div class="topline">
+        <button class="secondary" onclick="goHome()">← Inicio</button>
+        <button class="secondary" onclick="scanAnother()">📷 Escanear otro</button>
+      </div>
+
+      <div id="statusBox"></div>
+
+      <div class="card">
+        <h2 id="name"></h2>
+        <div class="muted" id="institution"></div>
+        <div class="muted" id="folio"></div>
+
+        <h3 class="section-title">Datos del asistente</h3>
+        <div class="grid two">
+          <div class="field">
+            <div class="field-name">Correo</div>
+            <div class="field-value" id="email"></div>
+          </div>
+          <div class="field">
+            <div class="field-name">Tipo de participación</div>
+            <div class="field-value" id="type"></div>
+          </div>
+          <div class="field">
+            <div class="field-name">Taller</div>
+            <div class="field-value" id="workshop"></div>
+          </div>
+          <div class="field">
+            <div class="field-name">Pago</div>
+            <div class="field-value" id="payment"></div>
+          </div>
+          <div class="field">
+            <div class="field-name">Kit</div>
+            <div class="field-value" id="kit"></div>
+          </div>
+          <div class="field">
+            <div class="field-name">Registro</div>
+            <div class="field-value" id="registration"></div>
+          </div>
+        </div>
+
+        <div id="oralBlock" class="hidden">
+          <h3 class="section-title">Presentación oral</h3>
+          <div class="grid two">
+            <div class="field"><div class="field-name">Fecha</div><div class="field-value" id="oralDate"></div></div>
+            <div class="field"><div class="field-name">Hora</div><div class="field-value" id="oralTime"></div></div>
+            <div class="field"><div class="field-name">Lugar</div><div class="field-value" id="oralPlace"></div></div>
+          </div>
+        </div>
+
+        <div id="posterBlock" class="hidden">
+          <h3 class="section-title">Presentación de cartel</h3>
+          <div class="grid two">
+            <div class="field"><div class="field-name">Fecha</div><div class="field-value" id="posterDate"></div></div>
+            <div class="field"><div class="field-name">Hora</div><div class="field-value" id="posterTime"></div></div>
+            <div class="field"><div class="field-name">Lugar</div><div class="field-value" id="posterPlace"></div></div>
+            <div class="field"><div class="field-name">Número</div><div class="field-value" id="posterNumber"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Acciones</h2>
+
+        <div id="workshopAction" class="action hidden">
+          <label for="workshopSelect">Seleccionar taller</label>
+          <select id="workshopSelect"></select>
+          <div id="workshopHelp" class="muted" style="margin-top:6px"></div>
+          <button id="saveWorkshopButton" class="primary big" onclick="saveWorkshop()">Guardar taller</button>
+        </div>
+
+        <div id="paymentAction" class="action hidden">
+          <p><strong>Pago pendiente.</strong> Valídalo únicamente después de verificarlo.</p>
+          <button class="warning big" onclick="confirmPayment()">Validar pago</button>
+        </div>
+
+        <div id="kitAction" class="action hidden">
+          <p><strong>Entrega de kit</strong></p>
+          <label for="shirtSizeSelect">Talla entregada</label>
+          <select id="shirtSizeSelect"></select>
+          <p class="muted">Selecciona la talla que se entrega físicamente a la persona.</p>
+          <button class="success big" onclick="deliverKit()">Confirmar entrega de kit</button>
+        </div>
+
+        <div id="registerAction" class="action hidden">
+          <button class="success big" onclick="registerAttendee()">Confirmar registro</button>
+        </div>
+
+        <div id="alreadyDone" class="action hidden">
+          <span class="pill">✓ Registro ya completado</span>
+        </div>
+
+        <hr style="border:0;border-top:1px solid var(--line);margin:22px 0">
+
+        <label for="observations">Observaciones</label>
+        <textarea id="observations" placeholder="Añadir nota o incidencia..."></textarea>
+        <button class="secondary big" onclick="saveObservation()">Guardar observación</button>
+      </div>
+    </section>
+  </main>
+
+<script>
+  /* =========================================================
+     CONEXIÓN GITHUB PAGES → APPS SCRIPT EXECUTION API
+     ========================================================= */
+
+  // Se conservan los identificadores de la versión de GitHub que ya funcionaba.
+  const CLIENT_ID = '136023587300-0g45vntc4519hodvvanovkl78nerf082.apps.googleusercontent.com';
+  const DEPLOYMENT_ID = 'AKfycbx_j3ZxYo1nc4rKkpatE9xTCD65Pjznh7NUWxW2SQZEd0iLEMp0D7mWoFNsDz7M4N2G9w';
+  const API_URL = `https://script.googleapis.com/v1/scripts/${DEPLOYMENT_ID}:run`;
+
+  // Durante la etapa actual se permiten ambas cuentas.
+  // Al migrar definitivamente, esta lista puede reducirse a las cuentas de staff que correspondan.
+  const AUTHORIZED_EMAILS = [
+    'jclalo@ier.unam.mx',
+    'inscripciones.cneer@ier.unam.mx'
+  ];
+
+  let accessToken = null;
+  let scanner = null;
+  let current = null;
+  const shirtSizes = ['CH', 'M', 'G', 'XG', 'XXG'];
+
+  document.getElementById('searchInput').addEventListener('keydown', event => {
+    if (event.key === 'Enter') search();
+  });
+
+
+  /* =========================================================
+     AUTENTICACIÓN
+     ========================================================= */
+
+  function loginGoogle() {
+    const loginStatus = document.getElementById('loginStatus');
+    if (loginStatus) loginStatus.textContent = 'Abriendo Google…';
+    if (!window.google || !google.accounts || !google.accounts.oauth2) {
+      showError('Google Identity Services todavía no ha terminado de cargar. Intenta nuevamente en unos segundos.');
+      return;
+    }
+
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/spreadsheets',
+      callback: async response => {
+        if (response.error) {
+          showError('No se pudo iniciar sesión con Google.');
+          return;
+        }
+
+        accessToken = response.access_token;
+        if (loginStatus) loginStatus.textContent = 'Cuenta seleccionada. Conectando con CNEER…';
+
+        try {
+          const userResponse = await fetch(
+            'https://www.googleapis.com/oauth2/v3/userinfo',
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+          );
+
+          const user = await userResponse.json();
+          const email = String(user.email || '').trim().toLowerCase();
+
+          if (!AUTHORIZED_EMAILS.includes(email)) {
+            accessToken = null;
+            showError(`Esta cuenta no está autorizada: ${email || 'usuario desconocido'}`);
+            return;
+          }
+
+          const ping = await runBackend('apiPing');
+
+          document.getElementById('loginCard').classList.add('hidden');
+          document.getElementById('homeCard').classList.remove('hidden');
+          document.getElementById('userInfo').textContent = ping.email;
+          document.getElementById('backendVersion').textContent = ping.version || 'sin versión';
+          if (loginStatus) loginStatus.textContent = '';
+
+        } catch (error) {
+          accessToken = null;
+          if (loginStatus) loginStatus.textContent = 'No se pudo conectar: ' + readableError(error);
+          showError(error.message);
+        }
+      }
+    });
+
+    tokenClient.requestAccessToken({ prompt: 'select_account' });
+  }
+
+
+  async function runBackend(functionName, parameters = []) {
+    if (!accessToken) {
+      throw new Error('La sesión no está activa. Vuelve a iniciar sesión.');
+    }
+
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        function: functionName,
+        parameters
+      })
+    });
+
+    let data = {};
+
+    try {
+      data = await response.json();
+    } catch (_) {
+      throw new Error('No se pudo interpretar la respuesta de Apps Script.');
+    }
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        accessToken = null;
+        throw new Error('La sesión de Google expiró. Vuelve a iniciar sesión.');
+      }
+
+      throw new Error(
+        data.error?.message ||
+        'Error de comunicación con Apps Script.'
+      );
+    }
+
+    if (data.error) {
+      const detail =
+        data.error?.details?.[0]?.errorMessage ||
+        data.error?.message ||
+        'El backend devolvió un error.';
+
+      throw new Error(detail);
+    }
+
+    return data.response?.result;
+  }
+
+
+  /* =========================================================
+     ESCÁNER QR
+     ========================================================= */
+
+  async function startScanner() {
+    if (!accessToken) {
+      showError('Primero inicia sesión.');
+      return;
+    }
+
+    if (typeof Html5Qrcode === 'undefined') {
+      showError('El lector QR todavía no ha terminado de cargar. Intenta nuevamente.');
+      return;
+    }
+
+    await stopScannerSilently();
+
+    document.getElementById('reader').innerHTML = '';
+    toggle('cancelScanButton', true);
+
+    scanner = new Html5Qrcode('reader');
+
+    try {
+      await scanner.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 }
+        },
+        onQrRead
+      );
+
+    } catch (error) {
+      scanner = null;
+      toggle('cancelScanButton', false);
+      showError('No se pudo iniciar la cámara: ' + readableError(error));
+    }
+  }
+
+
+  async function cancelScanner() {
+    await stopScannerSilently();
+    toggle('cancelScanButton', false);
+    goHome();
+  }
+
+
+  async function onQrRead(decodedText) {
+    try {
+      await stopScannerSilently();
+      toggle('cancelScanButton', false);
+
+      const token = extractToken(decodedText);
+
+      if (!token) {
+        throw new Error('El código QR no contiene un token válido.');
+      }
+
+      loading(true);
+      current = await runBackend('apiGetAttendeeByToken', [token]);
+      loading(false);
+      showAttendee();
+
+    } catch (error) {
+      loading(false);
+      showError(error.message);
+    }
+  }
+
+
+  function extractToken(text) {
+    const value = String(text || '').trim();
+
+    try {
+      const url = new URL(value);
+      const token = url.searchParams.get('token');
+      if (token) return token;
+    } catch (_) {}
+
+    return value;
+  }
+
+
+  async function stopScannerSilently() {
+    try {
+      if (scanner) {
+        const state = scanner.getState();
+
+        if (state === 2 || state === 3) {
+          await scanner.stop();
+        }
+      }
+    } catch (_) {
+      // Silencioso intencionalmente.
+    }
+
+    scanner = null;
+
+    const reader = document.getElementById('reader');
+    if (reader) reader.innerHTML = '';
+  }
+
+
+  /* =========================================================
+     BÚSQUEDA
+     ========================================================= */
+
+  function showSearch() {
+    stopScannerSilently();
+    hideAllMain();
+    document.getElementById('searchCard').classList.remove('hidden');
+    document.getElementById('searchInput').focus();
+  }
+
+
+  async function search() {
+    const query = document.getElementById('searchInput').value.trim();
+
+    if (query.length < 2) {
+      toast('Escribe al menos 2 caracteres.');
+      return;
+    }
+
+    loading(true);
+
+    try {
+      const items = await runBackend('apiSearchAttendees', [query]);
+      loading(false);
+      showResults(items);
+
+    } catch (error) {
+      loading(false);
+      showError(error.message);
+    }
+  }
+
+
+  function showResults(items) {
+    const box = document.getElementById('results');
+    box.innerHTML = '';
+
+    if (!items || !items.length) {
+      box.innerHTML = '<p class="muted">No se encontraron asistentes.</p>';
+      return;
+    }
+
+    items.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'result';
+
+      div.innerHTML = `
+        <div class="result-name">${esc(item.Nombre)}</div>
+        <div class="muted">${esc(item.Institucion || '')}</div>
+        <div class="muted">${esc(item.Folio)} · ${esc(item.Correo || '')}</div>
+        <button class="secondary big">Abrir registro</button>
+      `;
+
+      div.querySelector('button').onclick = () => openAttendee(item.Folio);
+      box.appendChild(div);
+    });
+  }
+
+
+  async function openAttendee(folio) {
+    loading(true);
+
+    try {
+      current = await runBackend('apiGetAttendee', [folio]);
+      loading(false);
+      showAttendee();
+
+    } catch (error) {
+      loading(false);
+      showError(error.message);
+    }
+  }
+
+
+  /* =========================================================
+     FICHA DEL ASISTENTE
+     ========================================================= */
+
+  function showAttendee() {
+    if (!current) return;
+
+    stopScannerSilently();
+    hideAllMain();
+    document.getElementById('attendeeSection').classList.remove('hidden');
+
+    text('name', current.Nombre || 'Sin nombre');
+    text('institution', current.Institucion || '—');
+    text('folio', current.Folio || '—');
+    text('email', current.Correo || '—');
+    text('type', prettyType(current.TipoParticipacion));
+    text('workshop', current.Taller || 'Pendiente de selección');
+    text('payment', prettyPayment(current.PagoValidado));
+
+    text(
+      'registration',
+      yes(current.RegistroConfirmado)
+        ? `✅ Confirmado${current.HoraRegistro ? ' · ' + current.HoraRegistro : ''}`
+        : 'Pendiente'
+    );
+
+    if (yes(current.TieneKit)) {
+      if (yes(current.KitEntregado)) {
+        text(
+          'kit',
+          `Sí · ✅ Entregado${current.Talla ? ' · Talla ' + current.Talla : ''}${current.HoraKitEntregado ? ' · ' + current.HoraKitEntregado : ''}`
+        );
+      } else {
+        text('kit', 'Sí · Pendiente de entrega');
+      }
+    } else {
+      text('kit', 'No corresponde');
+    }
+
+    const type = String(current.TipoParticipacion || '').toUpperCase();
+    const hasOral = type === 'ORAL' || type === 'ORAL_Y_CARTEL';
+    const hasPoster = type === 'CARTEL' || type === 'ORAL_Y_CARTEL';
+
+    toggle('oralBlock', hasOral);
+    toggle('posterBlock', hasPoster);
+
+    if (hasOral) {
+      text('oralDate', current.FechaOral || '❌ Sin dato');
+      text('oralTime', current.HoraOral || '❌ Sin dato');
+      text('oralPlace', current.LugarOral || '❌ Sin dato');
+    }
+
+    if (hasPoster) {
+      text('posterDate', current.FechaCartel || '❌ Sin dato');
+      text('posterTime', current.HoraCartel || '❌ Sin dato');
+      text('posterPlace', current.LugarCartel || '❌ Sin dato');
+      text('posterNumber', current.NumeroCartel || '—');
+    }
+
+    document.getElementById('observations').value = current.Observaciones || '';
+
+    renderStatus();
+    renderActions();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+
+  function renderStatus() {
+    const status = current._status;
+    const box = document.getElementById('statusBox');
+
+    const missing = status.missing && status.missing.length
+      ? `<ul class="missing">${status.missing.map(item => `<li>${esc(item)}</li>`).join('')}</ul>`
+      : '';
+
+    box.innerHTML = `
+      <div class="status ${esc(status.level)}">
+        <div class="status-title">${esc(status.title)}</div>
+        <div>${esc(status.message)}</div>
+        ${missing}
+      </div>
+    `;
+  }
+
+
+  function renderActions() {
+    [
+      'workshopAction',
+      'paymentAction',
+      'kitAction',
+      'registerAction',
+      'alreadyDone'
+    ].forEach(id => toggle(id, false));
+
+    if (yes(current.RegistroConfirmado)) {
+      toggle('alreadyDone', true);
+      return;
+    }
+
+    // Incidencia resoluble: taller pendiente.
+    if (current._status.editableIssue === 'WORKSHOP') {
+      toggle('workshopAction', true);
+      loadWorkshopOptions();
+      return;
+    }
+
+    // Incidencia resoluble: pago pendiente.
+    if (current._status.editableIssue === 'PAYMENT') {
+      toggle('paymentAction', true);
+      return;
+    }
+
+    // Paso normal del flujo: entregar kit y registrar talla.
+    // Mientras el kit esté pendiente NO se muestra el botón de confirmar registro.
+    if (current._status.editableIssue === 'KIT') {
+      fillShirtSizeSelect();
+      toggle('kitAction', true);
+      return;
+    }
+
+    if (current._status.level !== 'GREEN') {
+      return;
+    }
+
+    // Solo cuando todos los pasos previos están resueltos se confirma el registro.
+    toggle('registerAction', true);
+  }
+
+
+  /* =========================================================
+     TALLERES
+     ========================================================= */
+
+  async function loadWorkshopOptions() {
+    const select = document.getElementById('workshopSelect');
+    const button = document.getElementById('saveWorkshopButton');
+    const help = document.getElementById('workshopHelp');
+
+    select.innerHTML = '<option value="">Consultando talleres disponibles…</option>';
+    select.disabled = true;
+    button.disabled = true;
+    help.textContent = '';
+
+    try {
+      const workshops = await runBackend('apiGetWorkshops');
+
+      select.innerHTML = '<option value="">Selecciona un taller</option>';
+
+      if (!workshops || !workshops.length) {
+        select.innerHTML = '<option value="">No hay talleres con cupo disponible</option>';
+        help.textContent = 'No se encontraron lugares disponibles. Registra la situación en Observaciones.';
+        return;
+      }
+
+      workshops.forEach(workshop => {
+        const option = document.createElement('option');
+        option.value = workshop.NombreTaller;
+
+        const places = Number(workshop.Disponibles);
+        option.textContent = Number.isFinite(places)
+          ? `${workshop.NombreTaller} — ${places} ${places === 1 ? 'lugar disponible' : 'lugares disponibles'}`
+          : workshop.NombreTaller;
+
+        select.appendChild(option);
+      });
+
+      select.disabled = false;
+      button.disabled = false;
+      help.textContent = 'La disponibilidad se vuelve a comprobar al guardar.';
+
+    } catch (error) {
+      select.innerHTML = '<option value="">No fue posible cargar talleres</option>';
+      help.textContent = error.message;
+      showError(error.message);
+    }
+  }
+
+
+  async function saveWorkshop() {
+    const workshop = document.getElementById('workshopSelect').value;
+
+    if (!workshop) {
+      toast('Selecciona un taller.');
+      return;
+    }
+
+    loading(true);
+
+    try {
+      current = await runBackend('apiUpdateWorkshop', [current.Folio, workshop]);
+      loading(false);
+      toast('Taller asignado correctamente.');
+      showAttendee();
+
+    } catch (error) {
+      loading(false);
+      showError(error.message);
+      await loadWorkshopOptions();
+    }
+  }
+
+
+  /* =========================================================
+     PAGO
+     ========================================================= */
+
+  async function confirmPayment() {
+    if (!confirm('¿Confirmas que el pago fue verificado correctamente?')) {
+      return;
+    }
+
+    loading(true);
+
+    try {
+      current = await runBackend('apiValidatePayment', [current.Folio]);
+      loading(false);
+      toast('Pago validado.');
+      showAttendee();
+
+    } catch (error) {
+      loading(false);
+      showError(error.message);
+    }
+  }
+
+
+  /* =========================================================
+     KIT Y TALLA ENTREGADA
+     ========================================================= */
+
+  function fillShirtSizeSelect() {
+    const select = document.getElementById('shirtSizeSelect');
+
+    select.innerHTML = '<option value="">Selecciona la talla entregada</option>';
+
+    shirtSizes.forEach(size => {
+      const option = document.createElement('option');
+      option.value = size;
+      option.textContent = size;
+      select.appendChild(option);
+    });
+  }
+
+
+  async function deliverKit() {
+    const talla = document.getElementById('shirtSizeSelect').value;
+
+    if (!talla) {
+      toast('Selecciona la talla que se entregó.');
+      return;
+    }
+
+    if (!confirm(`¿Confirmas que entregaste el kit talla ${talla} a ${current.Nombre}?`)) {
+      return;
+    }
+
+    loading(true);
+
+    try {
+      current = await runBackend('apiMarkKitDelivered', [current.Folio, talla]);
+      loading(false);
+      toast('Kit marcado como entregado.');
+      showAttendee();
+
+    } catch (error) {
+      loading(false);
+      showError(error.message);
+    }
+  }
+
+
+  /* =========================================================
+     REGISTRO Y OBSERVACIONES
+     ========================================================= */
+
+  async function saveObservation() {
+    const observation = document.getElementById('observations').value;
+
+    loading(true);
+
+    try {
+      current = await runBackend('apiSaveObservation', [current.Folio, observation]);
+      loading(false);
+      toast('Observación guardada.');
+      showAttendee();
+
+    } catch (error) {
+      loading(false);
+      showError(error.message);
+    }
+  }
+
+
+  async function registerAttendee() {
+    if (!confirm(`¿Confirmar el registro de ${current.Nombre}?`)) {
+      return;
+    }
+
+    const observation = document.getElementById('observations').value;
+    loading(true);
+
+    try {
+      current = await runBackend('apiConfirmRegistration', [current.Folio, observation]);
+      loading(false);
+      toast('Registro completado.');
+      showAttendee();
+
+    } catch (error) {
+      loading(false);
+      showError(error.message);
+    }
+  }
+
+
+  /* =========================================================
+     NAVEGACIÓN Y UTILIDADES
+     ========================================================= */
+
+  function scanAnother() {
+    current = null;
+    hideAllMain();
+    document.getElementById('homeCard').classList.remove('hidden');
+    document.getElementById('results').innerHTML = '';
+    document.getElementById('searchInput').value = '';
+    startScanner();
+  }
+
+
+  function goHome() {
+    stopScannerSilently();
+    current = null;
+    hideAllMain();
+    document.getElementById('homeCard').classList.remove('hidden');
+  }
+
+
+  function hideAllMain() {
+    ['homeCard', 'searchCard', 'attendeeSection']
+      .forEach(id => document.getElementById(id).classList.add('hidden'));
+  }
+
+
+  function prettyType(value) {
+    const map = {
+      GENERAL: 'General',
+      ORAL: 'Presentación oral',
+      CARTEL: 'Presentación de cartel',
+      ORAL_Y_CARTEL: 'Presentación oral y cartel'
+    };
+
+    return map[String(value || '').toUpperCase()] || value || '—';
+  }
+
+
+  function prettyPayment(value) {
+    const normalized = String(value || '').toUpperCase();
+
+    if (normalized === 'SI') return '✅ Validado';
+    if (normalized === 'NO') return '⛔ Pendiente';
+    if (normalized === 'NO_APLICA') return 'No aplica';
+
+    return '❌ Sin dato';
+  }
+
+
+  function yes(value) {
+    return String(value || '').trim().toUpperCase() === 'SI';
+  }
+
+
+  function text(id, value) {
+    document.getElementById(id).textContent = value;
+  }
+
+
+  function toggle(id, show) {
+    document.getElementById(id).classList.toggle('hidden', !show);
+  }
+
+
+  function esc(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+
+  function loading(show) {
+    document.getElementById('loading').style.display = show ? 'flex' : 'none';
+  }
+
+
+  function toast(message) {
+    const element = document.getElementById('toast');
+    element.textContent = message;
+    element.style.display = 'block';
+
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => {
+      element.style.display = 'none';
+    }, 3000);
+  }
+
+
+  function readableError(error) {
+    if (error && error.message) return error.message;
+    return String(error || 'Error desconocido');
+  }
+
+
+  function showError(message) {
+    loading(false);
+    alert(readableError(message));
+  }
+</script>
+</body>
+</html>
